@@ -1,0 +1,217 @@
+USE Blublu;
+
+CREATE TABLE Detalles
+(
+  id          INT   NOT NULL AUTO_INCREMENT,
+  id_producto INT   NOT NULL,
+  id_pedido   INT   NOT NULL,
+  cantidad    INT   NULL,
+  precio      FLOAT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Envíos
+(
+  id                 INT          NOT NULL AUTO_INCREMENT,
+  id_pedido          INT          NOT NULL,
+  id_pais            INT          NOT NULL,
+  direccion          VARCHAR(150) NULL,
+  codigo_postal      VARCHAR(10)  NULL,
+  empresa_transporte VARCHAR(50)  NULL,
+  numero_seguimiento VARCHAR(50)  NULL,
+  fecha_envio        DATE         NULL,
+  fecha_entrega      DATE         NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Estados
+(
+  id     INT         NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(20) NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Impuestos
+(
+  id_impuesto      INT   NOT NULL AUTO_INCREMENT,
+  id_pais          INT   NOT NULL,
+  valor_porcentual FLOAT NULL,
+  PRIMARY KEY (id_impuesto)
+);
+
+CREATE TABLE Metodos_Pago
+(
+  id     INT         NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(20) NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Pagos
+(
+  id             INT  NOT NULL AUTO_INCREMENT,
+  id_pedido      INT  NOT NULL,
+  id_metodo_pago INT  NOT NULL,
+  fecha          DATE NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Paises
+(
+  id     INT         NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(50) NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Pedidos
+(
+  id         INT   NOT NULL AUTO_INCREMENT,
+  id_usuario INT   NOT NULL,
+  id_estado  INT   NOT NULL,
+  fecha      DATE  NULL,
+  monto      FLOAT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Productos
+(
+  id          INT          NOT NULL AUTO_INCREMENT,
+  id_usuario  INT          NOT NULL,
+  nombre      VARCHAR(50)  NULL,
+  descripcion VARCHAR(250) NULL,
+  precio      FLOAT        NULL,
+  stock       INT          NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Roles
+(
+  id     INT      NOT NULL AUTO_INCREMENT,
+  nombre CHAR(20) NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE Usuarios
+(
+  id             INT          NOT NULL AUTO_INCREMENT,
+  id_rol         INT          NOT NULL,
+  id_pais        INT          NOT NULL,
+  nombre         VARCHAR(50)  NOT NULL,
+  correo         VARCHAR(50)  NOT NULL,
+  direccion      VARCHAR(150) NOT NULL,
+  fecha_registro DATE         DEFAULT CURRENT_DATE,
+  PRIMARY KEY (id)
+);
+
+ALTER TABLE Productos
+  ADD CONSTRAINT FK_Usuarios_TO_Productos
+    FOREIGN KEY (id_usuario)
+    REFERENCES Usuarios (id);
+
+ALTER TABLE Pedidos
+  ADD CONSTRAINT FK_Usuarios_TO_Pedidos
+    FOREIGN KEY (id_usuario)
+    REFERENCES Usuarios (id);
+
+ALTER TABLE Envíos
+  ADD CONSTRAINT FK_Pedidos_TO_Envíos
+    FOREIGN KEY (id_pedido)
+    REFERENCES Pedidos (id);
+
+ALTER TABLE Pagos
+  ADD CONSTRAINT FK_Pedidos_TO_Pagos
+    FOREIGN KEY (id_pedido)
+    REFERENCES Pedidos (id);
+
+ALTER TABLE Usuarios
+  ADD CONSTRAINT FK_Roles_TO_Usuarios
+    FOREIGN KEY (id_rol)
+    REFERENCES Roles (id);
+
+ALTER TABLE Detalles
+  ADD CONSTRAINT FK_Productos_TO_Detalles
+    FOREIGN KEY (id_producto)
+    REFERENCES Productos (id);
+
+ALTER TABLE Detalles
+  ADD CONSTRAINT FK_Pedidos_TO_Detalles
+    FOREIGN KEY (id_pedido)
+    REFERENCES Pedidos (id);
+
+ALTER TABLE Pedidos
+  ADD CONSTRAINT FK_Estados_TO_Pedidos
+    FOREIGN KEY (id_estado)
+    REFERENCES Estados (id);
+
+ALTER TABLE Usuarios
+  ADD CONSTRAINT FK_Paises_TO_Usuarios
+    FOREIGN KEY (id_pais)
+    REFERENCES Paises (id);
+
+ALTER TABLE Envíos
+  ADD CONSTRAINT FK_Paises_TO_Envíos
+    FOREIGN KEY (id_pais)
+    REFERENCES Paises (id);
+
+ALTER TABLE Impuestos
+  ADD CONSTRAINT FK_Paises_TO_Impuestos
+    FOREIGN KEY (id_pais)
+    REFERENCES Paises (id);
+
+ALTER TABLE Pagos
+  ADD CONSTRAINT FK_Metodos_Pago_TO_Pagos
+    FOREIGN KEY (id_metodo_pago)
+    REFERENCES Metodos_Pago (id);
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER TR_ValidarStock
+BEFORE INSERT ON Detalles
+FOR EACH ROW
+BEGIN
+    DECLARE stock_actual INT;
+    
+    -- Obtener el stock actual del producto
+    SELECT stock INTO stock_actual FROM Productos WHERE id = NEW.id_producto;
+
+    -- Validar que el stock sea suficiente
+    IF stock_actual < NEW.cantidad THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay suficiente stock disponible para este producto.';
+    END IF;
+
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_ActualizarStock
+AFTER INSERT ON Detalles
+FOR EACH ROW
+BEGIN
+    -- Disminuir el stock del producto
+    UPDATE Productos
+    SET stock = stock - NEW.cantidad
+    WHERE id = NEW.id_producto;
+END;
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_ValidarFechaEnvio
+BEFORE INSERT OR UPDATE ON Envíos
+FOR EACH ROW
+BEGIN
+    -- Validar que la fecha de entrega no sea anterior a la fecha de envío
+    IF NEW.fecha_entrega < NEW.fecha_envio THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La fecha de entrega no puede ser anterior a la fecha de envío.';
+    END IF;
+END;
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_Actualizar_Estado_Pedido
+AFTER INSERT ON Pagos
+FOR EACH ROW
+BEGIN
+    -- Actualizar el estado del pedido a 'Completado' o 'Pagado'
+    UPDATE Pedidos
+    SET id_estado = (SELECT id FROM Estados WHERE nombre = 'Completado')
+    WHERE id = NEW.id_pedido;
+END;
+DELIMITER ;
