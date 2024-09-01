@@ -1,0 +1,54 @@
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER TR_ValidarStock
+BEFORE INSERT ON Detalles
+FOR EACH ROW
+BEGIN
+    DECLARE stock_actual INT;
+    
+    -- Obtener el stock actual del producto
+    SELECT stock INTO stock_actual FROM Productos WHERE id = NEW.id_producto;
+
+    -- Validar que el stock sea suficiente
+    IF stock_actual < NEW.cantidad THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay suficiente stock disponible para este producto.';
+    END IF;
+
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_ActualizarStock
+AFTER INSERT ON Detalles
+FOR EACH ROW
+BEGIN
+    -- Disminuir el stock del producto
+    UPDATE Productos
+    SET stock = stock - NEW.cantidad
+    WHERE id = NEW.id_producto;
+END;
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_ValidarFechaEnvio
+BEFORE INSERT OR UPDATE ON Envíos
+FOR EACH ROW
+BEGIN
+    -- Validar que la fecha de entrega no sea anterior a la fecha de envío
+    IF NEW.fecha_entrega < NEW.fecha_envio THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La fecha de entrega no puede ser anterior a la fecha de envío.';
+    END IF;
+END;
+DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_Actualizar_Estado_Pedido
+AFTER INSERT ON Pagos
+FOR EACH ROW
+BEGIN
+    -- Actualizar el estado del pedido a 'Completado' o 'Pagado'
+    UPDATE Pedidos
+    SET id_estado = (SELECT id FROM Estados WHERE nombre = 'Completado')
+    WHERE id = NEW.id_pedido;
+END;
+DELIMITER ;

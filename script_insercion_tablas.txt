@@ -1,0 +1,32 @@
+INSERT INTO Roles (id, nombre) 
+VALUES (1, 'Cliente');
+
+INSERT INTO Paises (id, nombre) 
+VALUES (1, 'Perú');
+
+INSERT INTO Usuarios (id, id_rol, id_pais, nombre, correo, direccion, fecha_registro) 
+VALUES (1, 1, 1, 'Juan Pérez', 'juan.perez@example.com', 'Av. Siempre Viva 123', '2024-08-30');
+
+INSERT INTO Estados (id, nombre) 
+VALUES (1, 'Pendiente');
+
+INSERT INTO Productos (id, id_usuario, nombre, descripcion, precio, stock) 
+VALUES (1, 1, 'Arándanos', 'Arándanos frescos de alta calidad', 20.5, 100);
+
+INSERT INTO Pedidos (id, id_usuario, id_estado, fecha, monto) 
+VALUES (1, 1, 1, '2024-08-30', 41.0);
+
+INSERT INTO Detalles (id, id_producto, id_pedido, cantidad, precio) 
+VALUES (1, 1, 1, 2, 20.5);
+
+INSERT INTO Metodos_Pago (id, nombre) 
+VALUES (1, 'Tarjeta de Crédito');
+
+INSERT INTO Pagos (id, id_pedido, id_metodo_pago, fecha) 
+VALUES (1, 1, 1, '2024-08-30');
+
+INSERT INTO Envíos (id, id_pedido, id_pais, direccion, codigo_postal, empresa_transporte, numero_seguimiento, fecha_envio, fecha_entrega) 
+VALUES (1, 1, 1, 'Av. Siempre Viva 123', '15001', 'DHL', 'AB123456789', '2024-08-31', '2024-09-02');
+
+INSERT INTO Impuestos (id_impuesto, id_pais, valor_porcentual) 
+VALUES (1, 1, 18.0);
