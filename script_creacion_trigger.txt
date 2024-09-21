@@ -1,6 +1,6 @@
 
 DELIMITER $$
-CREATE DEFINER = 'root'@'localhost' TRIGGER TR_ValidarStock
+CREATE DEFINER = 'Mod'@'%' TRIGGER TR_ValidarStock
 BEFORE INSERT ON Detalles
 FOR EACH ROW
 BEGIN
@@ -18,7 +18,7 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_ActualizarStock
+CREATE DEFINER = 'Mod'@'%' TRIGGER Tr_ActualizarStock
 AFTER INSERT ON Detalles
 FOR EACH ROW
 BEGIN
@@ -30,7 +30,7 @@ END;
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_ValidarFechaEnvio
+CREATE DEFINER = 'Mod'@'%' TRIGGER Tr_ValidarFechaEnvio
 BEFORE INSERT OR UPDATE ON Envíos
 FOR EACH ROW
 BEGIN
@@ -42,7 +42,7 @@ END;
 DELIMITER ;
 
 DELIMITER $$
-CREATE DEFINER = 'root'@'localhost' TRIGGER Tr_Actualizar_Estado_Pedido
+CREATE DEFINER = 'Mod'@'%' TRIGGER Tr_Actualizar_Estado_Pedido
 AFTER INSERT ON Pagos
 FOR EACH ROW
 BEGIN
